@@ -1,69 +1,133 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import Header from '@/components/Header';
+import Countdown from '@/components/Countdown';
+import CoverCard from '@/components/CoverCard';
+import TrackItem from '@/components/TrackItem';
+import FullEpHiglight from '@/components/FullEpHiglight';
+import CartFloatingBar from '@/components/CartFloatingBar';
+import Footer from '@/components/Footer';
+import { INITIAL_TRACKS, DEFAULT_EP_SETTINGS } from '@/lib/constants';
+import { Track, EpSettings } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { Award, Music, Sparkles } from 'lucide-react';
+
+export default function HomePage() {
+  const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
+  const [settings, setSettings] = useState<EpSettings>(DEFAULT_EP_SETTINGS);
+
+  useEffect(() => {
+    // Buscar faixas e configurações atualizadas do Supabase se configurado
+    const supabase = createClient();
+    if (supabase) {
+      supabase
+        .from('tracks')
+        .select('*')
+        .order('track_number', { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && data && data.length > 0) {
+            setTracks(data);
+          }
+        });
+
+      supabase
+        .from('ep_settings')
+        .select('*')
+        .eq('id', 1)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setSettings(data);
+          }
+        });
+    }
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="flex flex-col min-h-screen bg-[#131315]">
+      <Header />
+
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-32 flex flex-col">
+        {/* Topo / Badges */}
+        <section className="flex flex-col pt-4 pb-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1b1d] border border-white/5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#e8c76b] animate-pulse" />
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#e8c76b] uppercase tracking-widest">
+                Versão Digital · Acesso Antecipado
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#cfc5b2] uppercase tracking-wider">
+              Edição Limitada
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1 my-2">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#e8c76b]">
+              {settings.produtora} Apresenta
+            </span>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+              {settings.title}
+            </h1>
+            <p className="text-sm sm:text-base text-[#cfc5b2] mt-1 leading-relaxed max-w-xl">
+              {settings.tagline}
+            </p>
+          </div>
+
+          {/* Contagem Decrescente */}
+          <Countdown targetDate={settings.release_at} />
+
+          {/* Capa do EP com Destaque */}
+          <div className="my-4">
+            <CoverCard coverUrl={settings.cover_url} title={settings.title} />
+          </div>
+        </section>
+
+        {/* Lista de Faixas */}
+        <section className="flex flex-col py-6">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <span className="text-[11px] font-bold text-[#e8c76b] uppercase tracking-widest">
+                Alinhamento
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
+                <Music className="w-6 h-6 text-[#e8c76b]" /> Faixas do EP
+              </h2>
+            </div>
+            <span className="text-xs text-[#98907e]">Prévia de 30s</span>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {tracks.map((track) => (
+              <TrackItem key={track.id || track.track_number} track={track} />
+            ))}
+          </div>
+        </section>
+
+        {/* Bloco de Destaque: EP Completo a 3.500 Kz */}
+        <FullEpHiglight />
+
+        {/* Selo de Garantia de Qualidade Analógica */}
+        <section className="my-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#1c1b1d] border border-white/5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#2a2a2c] flex items-center justify-center text-[#e8c76b] shrink-0 border border-white/5">
+              <Award className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-[#e8c76b] uppercase tracking-widest">
+                Selo de Qualidade Sonora Bersal Studios
+              </span>
+              <p className="text-xs text-[#cfc5b2] mt-0.5 leading-relaxed">
+                Gravado e masterizado com pré-amplificadores valvulados e conversores analógico-digitais de nível profissional em Luanda.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <CartFloatingBar />
+      <Footer />
     </div>
   );
 }
