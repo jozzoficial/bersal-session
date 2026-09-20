@@ -12,9 +12,9 @@ export const DEFAULT_EP_SETTINGS: EpSettings = {
   produtora: 'Bersal Studios',
   tagline: 'Uma imersão sonora e texturas cinemáticas gravadas em alta resolução valvulada.',
   cover_url: '/img/cover.jpeg',
-  full_ep_price_kz: 3500,
-  // 5 dias à frente por padrão para contagem decrescente ativa
-  release_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000).toISOString(),
+  full_ep_price_kz: 4000,
+  // data de lançamento em 30 de Outubro as 20:00
+  release_at: new Date("2026-10-30T20:00:00+01:00").toISOString(),
   payment_multicaixa_express: DEFAULT_PAYMENT.multicaixa_express,
   payment_entidade: DEFAULT_PAYMENT.entidade,
   payment_referencia: DEFAULT_PAYMENT.referencia,

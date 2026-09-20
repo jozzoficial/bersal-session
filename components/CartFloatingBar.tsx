@@ -23,7 +23,7 @@ export default function CartFloatingBar() {
           <div className="flex flex-col min-w-0">
             <span className="text-xs text-[#cfc5b2] truncate">
               {isFullEp
-                ? 'EP Completo (6 faixas + bônus)'
+                ? 'EP Completo (9 faixas + booklet + stems)'
                 : `${totalItemsCount} ${totalItemsCount === 1 ? 'faixa selecionada' : 'faixas selecionadas'}`}
             </span>
             <span className="text-lg font-extrabold text-[#ffe49e] font-mono leading-tight">

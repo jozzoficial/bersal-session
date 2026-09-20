@@ -53,7 +53,7 @@ export default function Countdown({ targetDate }: CountdownProps) {
     <div className="w-full my-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-bold text-[#cfc5b2] uppercase tracking-widest flex items-center gap-1.5">
-          <Timer className="w-3.5 h-3.5 text-[#e8c76b]" /> Lançamento Oficial Em
+          <Timer className="w-3.5 h-3.5 text-[#e8c76b]" /> Lançamento Oficial Em:
         </span>
         <span className="text-[11px] font-bold text-[#78ffbd] uppercase tracking-wider bg-[#00623f]/20 px-2 py-0.5 rounded-full border border-[#78ffbd]/20">
           Fase 1 Aberta

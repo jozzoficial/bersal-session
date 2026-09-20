@@ -31,7 +31,7 @@ const DEMO_ORDERS: Order[] = [
     buyer_email: 'hamilton.santos@gmail.com',
     buyer_whatsapp: '+244923456789',
     order_type: 'ep_completo',
-    total_kz: 3500,
+    total_kz: 4000,
     proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
     status: 'pendente',
     created_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
@@ -71,7 +71,7 @@ const DEMO_ORDERS: Order[] = [
     buyer_email: 'edgar.massango@bna.ao',
     buyer_whatsapp: '+244912998877',
     order_type: 'ep_completo',
-    total_kz: 3500,
+    total_kz: 4000,
     proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
     status: 'confirmado',
     created_at: new Date(Date.now() - 320 * 60 * 1000).toISOString(),
@@ -84,7 +84,7 @@ const DEMO_ORDERS: Order[] = [
     buyer_email: 'anapaula.l@sonangol.co.ao',
     buyer_whatsapp: '+244923118899',
     order_type: 'ep_completo',
-    total_kz: 3500,
+    total_kz: 4000,
     proof_url: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
     status: 'entregue',
     created_at: new Date(Date.now() - 1400 * 60 * 1000).toISOString(),
@@ -261,44 +261,40 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setFilter('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              filter === 'all'
-                ? 'bg-[#e8c76b] text-[#0b0b0d]'
-                : 'bg-[#1c1b1d] text-[#cfc5b2] hover:bg-[#2a2a2c]'
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${filter === 'all'
+              ? 'bg-[#e8c76b] text-[#0b0b0d]'
+              : 'bg-[#1c1b1d] text-[#cfc5b2] hover:bg-[#2a2a2c]'
+              }`}
           >
             Todos ({orders.length})
           </button>
           <button
             type="button"
             onClick={() => setFilter('pendente')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              filter === 'pendente'
-                ? 'bg-[#e8c76b] text-[#0b0b0d]'
-                : 'bg-[#1c1b1d] text-[#e8c76b] hover:bg-[#2a2a2c]'
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${filter === 'pendente'
+              ? 'bg-[#e8c76b] text-[#0b0b0d]'
+              : 'bg-[#1c1b1d] text-[#e8c76b] hover:bg-[#2a2a2c]'
+              }`}
           >
             Pendentes ({totalPendentes})
           </button>
           <button
             type="button"
             onClick={() => setFilter('confirmado')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              filter === 'confirmado'
-                ? 'bg-[#2ee59d] text-[#0b0b0d]'
-                : 'bg-[#1c1b1d] text-[#78ffbd] hover:bg-[#2a2a2c]'
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${filter === 'confirmado'
+              ? 'bg-[#2ee59d] text-[#0b0b0d]'
+              : 'bg-[#1c1b1d] text-[#78ffbd] hover:bg-[#2a2a2c]'
+              }`}
           >
             Confirmados ({totalConfirmados})
           </button>
           <button
             type="button"
             onClick={() => setFilter('entregue')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              filter === 'entregue'
-                ? 'bg-[#38bdf8] text-[#0b0b0d]'
-                : 'bg-[#1c1b1d] text-[#38bdf8] hover:bg-[#2a2a2c]'
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${filter === 'entregue'
+              ? 'bg-[#38bdf8] text-[#0b0b0d]'
+              : 'bg-[#1c1b1d] text-[#38bdf8] hover:bg-[#2a2a2c]'
+              }`}
           >
             Entregues ({totalEntregues})
           </button>
@@ -355,22 +351,20 @@ export default function AdminPage() {
 
                   {/* Badge Colorido de Status */}
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                      order.status === 'pendente'
-                        ? 'bg-[#e8c76b]/15 text-[#e8c76b] border border-[#e8c76b]/30'
-                        : order.status === 'confirmado'
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${order.status === 'pendente'
+                      ? 'bg-[#e8c76b]/15 text-[#e8c76b] border border-[#e8c76b]/30'
+                      : order.status === 'confirmado'
                         ? 'bg-[#2ee59d]/15 text-[#78ffbd] border border-[#2ee59d]/30'
                         : 'bg-[#38bdf8]/15 text-[#38bdf8] border border-[#38bdf8]/30'
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        order.status === 'pendente'
-                          ? 'bg-[#e8c76b] animate-ping'
-                          : order.status === 'confirmado'
+                      className={`w-1.5 h-1.5 rounded-full ${order.status === 'pendente'
+                        ? 'bg-[#e8c76b] animate-ping'
+                        : order.status === 'confirmado'
                           ? 'bg-[#2ee59d]'
                           : 'bg-[#38bdf8]'
-                      }`}
+                        }`}
                     />
                     {order.status}
                   </span>

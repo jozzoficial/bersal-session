@@ -40,7 +40,7 @@ export default function FullEpHiglight() {
         EP COMPLETO BERSAL SESSION I
       </h2>
       <p className="text-sm text-[#cfc5b2] mt-2 leading-relaxed">
-        Garante acesso antecipado a todas as 6 faixas em formato WAV (Lossless Studio Master 24-bit / 96kHz) e MP3 320kbps, além do booklet conceitual 4K e stems instrumentais exclusivas.
+        Garante acesso antecipado a todas as 9 faixas em formato mp3, além do booklet conceitual 4K e stems instrumentais exclusivas.
       </p>
 
       {/* Benefícios Inclusos */}
@@ -48,7 +48,7 @@ export default function FullEpHiglight() {
         <div className="flex items-center gap-2.5 text-white">
           <CheckCircle2 className="w-4 h-4 text-[#e8c76b] shrink-0" />
           <span className="text-xs sm:text-sm font-medium">
-            Todas as 6 faixas em WAV Lossless 24-bit Master
+            Todas as 9 faixas em MP3 320kbps
           </span>
         </div>
         <div className="flex items-center gap-2.5 text-white">
@@ -89,7 +89,7 @@ export default function FullEpHiglight() {
         className="w-full min-h-[56px] px-6 rounded-xl bg-gradient-to-r from-[#f3dc8f] via-[#e8c76b] to-[#d4af37] text-[#0b0b0d] font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(232,199,107,0.35)] hover:brightness-105 active:scale-[0.98] transition-all cursor-pointer"
       >
         <ShoppingBag className="w-5 h-5 text-[#0b0b0d]" />
-        {isFullEp ? 'EP Completo Selecionado — Ir para Checkout' : 'Comprar EP Completo — 3.500 Kz'}
+        {isFullEp ? 'EP Completo Selecionado — Ir para Checkout' : 'Comprar EP Completo — 4.000 Kz'}
       </button>
 
       <p className="text-[11px] text-center text-[#98907e] mt-3">

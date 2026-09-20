@@ -105,7 +105,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Bloco de Destaque: EP Completo a 3.500 Kz */}
+        {/* Bloco de Destaque: EP Completo a 4.000 Kz */}
         <FullEpHiglight />
 
         {/* Selo de Garantia de Qualidade Analógica */}
@@ -119,7 +119,7 @@ export default function HomePage() {
                 Selo de Qualidade Sonora Bersal Studios
               </span>
               <p className="text-xs text-[#cfc5b2] mt-0.5 leading-relaxed">
-                Gravado e masterizado com pré-amplificadores valvulados e conversores analógico-digitais de nível profissional em Luanda.
+                Gravado e masterizado com pré-amplificadores valvulados e conversores analógico-digitais de nível profissional.
               </p>
             </div>
           </div>

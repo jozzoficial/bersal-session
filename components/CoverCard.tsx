@@ -49,7 +49,7 @@ export default function CoverCard({ coverUrl, title }: CoverCardProps) {
             Gravação Valvulada
           </span>
           <span className="text-sm font-extrabold text-white">
-            6 Faixas Exclusivas
+            9 Faixas Exclusivas
           </span>
         </div>
         <div className="w-9 h-9 rounded-full bg-[#e8c76b] flex items-center justify-center text-[#0b0b0d] shadow-md group-hover:rotate-45 transition-transform">
