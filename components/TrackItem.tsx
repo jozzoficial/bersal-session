@@ -30,17 +30,17 @@ export default function TrackItem({ track }: TrackItemProps) {
     <div
       className={`flex flex-col p-4 rounded-xl border transition-all duration-300 relative overflow-hidden ${
         track.is_featured
-          ? 'bg-[#201f21] border-[#e8c76b]/35 shadow-[0_8px_24px_rgba(232,199,107,0.08)]'
-          : 'bg-[#1c1b1d] border-white/5 hover:border-white/15 shadow-md'
+          ? 'bg-[#1c1a42] border-[#7c52ff]/35 shadow-[0_8px_24px_rgba(124,82,255,0.15)]'
+          : 'bg-[#16143a] border-[#7c52ff]/14 hover:border-[#7c52ff]/30 shadow-md'
       }`}
     >
       {/* Badge de Destaque se for a faixa foco */}
       {track.is_featured && (
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#e8c76b] text-[#0b0b0d] text-[10px] uppercase tracking-wider font-extrabold shadow-sm">
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#e8517a] to-[#7c52ff] text-white text-[10px] uppercase tracking-wider font-extrabold shadow-sm">
             <Star className="w-3 h-3 fill-current" /> Faixa Foco
           </div>
-          <span className="text-[10px] font-bold text-[#e8c76b] uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-[#a77fff] uppercase tracking-widest">
             Mais Aguardada
           </span>
         </div>
@@ -49,15 +49,15 @@ export default function TrackItem({ track }: TrackItemProps) {
       {/* Linha Superior: Número, Título, Duração e Preço */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <span className="text-xl font-extrabold text-[#ffe49e] font-mono select-none pt-0.5">
+          <span className="text-xl font-extrabold text-[#7c52ff]/60 font-mono select-none pt-0.5">
             {track.track_number < 10 ? `0${track.track_number}` : track.track_number}
           </span>
           <div className="flex flex-col min-w-0">
-            <h3 className="text-base font-bold text-white truncate group-hover:text-[#ffe49e] transition-colors">
+            <h3 className="text-base font-bold text-white truncate">
               {track.title}
             </h3>
             {track.description && (
-              <p className="text-xs text-[#cfc5b2] line-clamp-1 mt-0.5">
+              <p className="text-xs text-[#b5b0d5] line-clamp-1 mt-0.5">
                 {track.description}
               </p>
             )}
@@ -68,7 +68,7 @@ export default function TrackItem({ track }: TrackItemProps) {
           <span className="text-base font-extrabold text-[#e8c76b] font-mono">
             {formatKz(track.price_kz)}
           </span>
-          <span className="text-[11px] font-medium text-[#98907e]">
+          <span className="text-[11px] font-medium text-[#6a6690]">
             {formatTime(track.duration_seconds)}
           </span>
         </div>
@@ -82,8 +82,8 @@ export default function TrackItem({ track }: TrackItemProps) {
           onClick={() => togglePlay(track.track_number, track.preview_url)}
           className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-md transition-all active:scale-95 ${
             isCurrentPlaying
-              ? 'bg-[#e8c76b] text-[#0b0b0d] ring-2 ring-[#e8c76b]/50 shadow-[0_0_15px_rgba(232,199,107,0.4)]'
-              : 'bg-[#2a2a2c] text-[#ffe49e] hover:bg-[#353437] hover:text-[#e8c76b]'
+              ? 'bg-gradient-to-br from-[#e8517a] to-[#7c52ff] text-white ring-2 ring-[#e8517a]/40 shadow-[0_0_18px_rgba(232,81,122,0.4)]'
+              : 'bg-[#1c1a42] text-[#a77fff] hover:bg-[#231f50] hover:text-white border border-[#7c52ff]/25 hover:border-[#7c52ff]/50'
           }`}
           title={isCurrentPlaying ? 'Pausar prévia' : 'Ouvir prévia de 30s'}
         >
@@ -96,17 +96,17 @@ export default function TrackItem({ track }: TrackItemProps) {
 
         {/* Barra de Progresso da Prévia */}
         <div className="flex flex-col flex-1 min-w-0 gap-1">
-          <div className="w-full h-2 rounded-full bg-[#2a2a2c] relative overflow-hidden">
+          <div className="w-full h-1.5 rounded-full bg-[#7c52ff]/15 relative overflow-hidden">
             <div
-              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#ffe49e] to-[#e8c76b] rounded-full transition-all duration-300"
+              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#7c52ff] to-[#e8517a] rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-[10px] text-[#98907e]">
-            <span className="font-mono text-[#e8c76b] font-semibold">
+          <div className="flex justify-between items-center text-[10px] text-[#6a6690]">
+            <span className="font-mono text-[#a77fff] font-semibold">
               0:{currentSeconds < 10 ? `0${currentSeconds}` : currentSeconds} / 0:30
             </span>
-            <span className="uppercase tracking-wider font-semibold text-[#cfc5b2]">
+            <span className="uppercase tracking-wider font-semibold text-[#b5b0d5]">
               Prévia HD
             </span>
           </div>
@@ -116,20 +116,20 @@ export default function TrackItem({ track }: TrackItemProps) {
         <button
           type="button"
           onClick={() => toggleTrack(track)}
-          className={`min-h-[44px] px-4 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all active:scale-95 ${
+          className={`min-h-[44px] px-4 rounded-full font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all active:scale-95 ${
             isSelected
-              ? 'bg-[#e8c76b] text-[#0b0b0d] shadow-[0_0_12px_rgba(232,199,107,0.3)]'
-              : 'bg-[#2a2a2c] hover:bg-[#353437] text-white hover:text-[#ffe49e]'
+              ? 'bg-gradient-to-r from-[#e8517a] to-[#7c52ff] text-white shadow-[0_0_16px_rgba(232,81,122,0.35)]'
+              : 'bg-[#1c1a42] hover:bg-[#231f50] text-[#b5b0d5] hover:text-white border border-[#7c52ff]/20 hover:border-[#7c52ff]/40'
           }`}
         >
           {isSelected ? (
             <>
-              <Check className="w-4 h-4 text-[#0b0b0d]" />
+              <Check className="w-4 h-4" />
               <span>Adicionado</span>
             </>
           ) : (
             <>
-              <Plus className="w-4 h-4 text-[#e8c76b]" />
+              <Plus className="w-4 h-4 text-[#a77fff]" />
               <span>Adicionar</span>
             </>
           )}

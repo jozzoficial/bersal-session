@@ -24,25 +24,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const synthControllerRef = useRef<{ stop: () => void } | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    audioRef.current = new Audio();
-    
-    audioRef.current.onended = () => {
-      stopPlayback();
-    };
-
-    audioRef.current.onerror = () => {
-      // Fallback para sintetizador Web Audio se o áudio real não carregar
-      if (activeTrackNumber) {
-        startSynthPlayback(activeTrackNumber);
-      }
-    };
-
-    return () => {
-      stopPlayback();
-    };
-  }, []);
-
   const stopPlayback = () => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -79,6 +60,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }, 250);
   };
 
+  useEffect(() => {
+    audioRef.current = new Audio();
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      stopAllSynthesizedPreviews();
+    };
+  }, []);
+
   const togglePlay = (trackNumber: number, previewUrl?: string) => {
     // Se já estiver tocando esta mesma faixa, pausa
     if (activeTrackNumber === trackNumber && isPlaying) {
@@ -103,6 +94,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (previewUrl && previewUrl.startsWith('http')) {
       if (audioRef.current) {
         audioRef.current.src = previewUrl;
+        audioRef.current.onended = () => {
+          stopPlayback();
+        };
+        audioRef.current.onerror = () => {
+          startSynthPlayback(trackNumber);
+        };
         audioRef.current
           .play()
           .then(() => {

@@ -21,7 +21,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
   description:
-    'Acesso antecipado exclusivo ao EP BERSAL SESSION I da Bersal Studios. 6 faixas masterizadas em alta fidelidade analógica. Garanta o EP completo ou faixas individuais.',
+    'Acesso antecipado exclusivo ao EP BERSAL SESSION I da Bersal Studios. 9 faixas masterizadas em alta fidelidade analógica. Garanta o EP completo ou faixas individuais.',
   keywords: [
     'Bersal Studios',
     'Bersal Session I',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
     description:
-      'Ouça as prévias de 30 segundos e garanta o seu acesso antecipado às 6 faixas em formato Master Hi-Res.',
+      'Ouça as prévias de 30 segundos e garanta o seu acesso antecipado às 9 faixas em formato MP3 320kbps.',
     url: 'https://bersalsession.com',
     siteName: 'Bersal Studios',
     images: [
@@ -65,7 +65,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-AO" className={`${jakarta.variable} ${manrope.variable} dark`}>
-      <body className="bg-[#131315] text-[#e5e1e4] min-h-screen flex flex-col antialiased selection:bg-[#e8c76b]/30 selection:text-[#ffe49e]">
+      <body className="bg-[#09090f] text-[#ddd9f5] min-h-screen flex flex-col antialiased selection:bg-[#7c52ff]/30 selection:text-[#a77fff]">
         <AudioProvider>
           <CartProvider>
             {children}

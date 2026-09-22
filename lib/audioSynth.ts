@@ -1,6 +1,6 @@
 // Gerador Web Audio sintetizado para prévias de áudio ricas e demonstrativas offline
 let audioCtx: AudioContext | null = null;
-let activeSourceNodes: { [key: string]: { stop: () => void; intervalId?: number } } = {};
+const activeSourceNodes: { [key: string]: { stop: () => void; intervalId?: number } } = {};
 
 export function playSynthesizedPreview(trackNumber: number, onEnded?: () => void) {
   try {

@@ -130,11 +130,13 @@ create policy "order_items_admin_select" on order_items for select using (auth.r
 -- Buckets:
 -- 1. 'previews' (público: leitura livre de áudio 30s)
 -- 2. 'comprovativos' (privado: upload público de comprovativo, leitura restrita a autenticados)
+-- 3. 'gallery' (público: para imagens da Galeria)
 
 insert into storage.buckets (id, name, public) 
 values 
   ('previews', 'previews', true),
-  ('comprovativos', 'comprovativos', false)
+  ('comprovativos', 'comprovativos', false),
+  ('gallery', 'gallery', true)
 on conflict (id) do nothing;
 
 -- Storage Policies
@@ -146,3 +148,24 @@ create policy "comprovativos_public_insert" on storage.objects
 
 create policy "comprovativos_admin_read" on storage.objects 
   for select using (bucket_id = 'comprovativos' and auth.role() = 'authenticated');
+
+create policy "gallery_public_read" on storage.objects 
+  for select using (bucket_id = 'gallery');
+
+create policy "gallery_admin_all" on storage.objects 
+  for all using (bucket_id = 'gallery' and auth.role() = 'authenticated');
+
+-- ==============================================================================
+-- GALERIA DE IMAGENS
+-- ==============================================================================
+
+create table if not exists gallery_images (
+  id uuid primary key default gen_random_uuid(),
+  image_url text not null,
+  description text,
+  created_at timestamptz default now()
+);
+
+alter table gallery_images enable row level security;
+create policy "gallery_images_select_public" on gallery_images for select using (true);
+create policy "gallery_images_admin_all" on gallery_images for all using (auth.role() = 'authenticated');

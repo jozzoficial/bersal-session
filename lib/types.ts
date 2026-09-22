@@ -48,3 +48,10 @@ export interface Order {
   delivered_at?: string | null;
   order_items?: OrderItem[];
 }
+
+export interface GalleryImage {
+  id: string;
+  image_url: string;
+  description?: string;
+  created_at: string;
+}

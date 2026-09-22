@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   CheckCircle2,
-  Clock,
   Send,
   Eye,
   Phone,
@@ -12,14 +11,18 @@ import {
   X,
   FileText,
   DollarSign,
-  TrendingUp,
   Hourglass,
   Disc,
   Music,
   ExternalLink,
   MessageCircle,
+  Camera,
+  Upload,
+  Trash2,
+  Plus,
+  Image as ImageIcon,
 } from 'lucide-react';
-import { Order, OrderStatus } from '@/lib/types';
+import { Order, OrderStatus, GalleryImage } from '@/lib/types';
 import { formatKz } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 
@@ -94,10 +97,18 @@ const DEMO_ORDERS: Order[] = [
 ];
 
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<'pedidos' | 'galeria'>('pedidos');
   const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
   const [filter, setFilter] = useState<'all' | OrderStatus>('all');
   const [search, setSearch] = useState('');
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
+
+  // Gallery state
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar dados reais do Supabase
   useEffect(() => {
@@ -126,6 +137,88 @@ export default function AdminPage() {
         });
     }
   }, []);
+
+  // Carregar imagens da galeria
+  useEffect(() => {
+    if (activeTab !== 'galeria') return;
+
+    let isMounted = true;
+    const supabase = createClient();
+    if (supabase) {
+      supabase
+        .from('gallery_images')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (isMounted) {
+            if (!error && data) {
+              setGalleryImages(data as GalleryImage[]);
+            }
+            setGalleryLoading(false);
+          }
+        });
+    } else {
+      queueMicrotask(() => {
+        if (isMounted) setGalleryLoading(false);
+      });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
+
+  // Upload de imagem para a galeria
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const supabase = createClient();
+    if (!supabase) { setUploading(false); return; }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from('gallery')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+    if (uploadError) {
+      alert('Erro ao fazer upload: ' + uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    const imageUrl = urlData.publicUrl;
+
+    const { data: insertData, error: insertError } = await supabase
+      .from('gallery_images')
+      .insert({ image_url: imageUrl, description: newDescription || null })
+      .select()
+      .single();
+
+    if (!insertError && insertData) {
+      setGalleryImages((prev) => [insertData as GalleryImage, ...prev]);
+      setNewDescription('');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setUploading(false);
+  };
+
+  // Eliminar imagem da galeria
+  const handleDeleteImage = async (img: GalleryImage) => {
+    if (!confirm('Tens a certeza que queres eliminar esta imagem?')) return;
+    const supabase = createClient();
+    if (!supabase) return;
+
+    // Extrair nome do ficheiro a partir da URL
+    const urlParts = img.image_url.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+
+    await supabase.storage.from('gallery').remove([fileName]);
+    await supabase.from('gallery_images').delete().eq('id', img.id);
+    setGalleryImages((prev) => prev.filter((i) => i.id !== img.id));
+  };
 
   // Ações de transição de status
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
@@ -254,6 +347,40 @@ export default function AdminPage() {
         </div>
       </section>
 
+      {/* Tabs: Pedidos | Galeria */}
+      <section className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('pedidos')}
+          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'pedidos'
+              ? 'bg-[#e8c76b] text-[#0b0b0d] shadow-md'
+              : 'bg-[#1c1b1d] text-[#cfc5b2] hover:bg-[#2a2a2c] border border-white/5'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <FileText className="w-4 h-4" /> Gestão de Pedidos
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('galeria');
+            setGalleryLoading(true);
+          }}
+          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === 'galeria'
+              ? 'bg-[#e8c76b] text-[#0b0b0d] shadow-md'
+              : 'bg-[#1c1b1d] text-[#cfc5b2] hover:bg-[#2a2a2c] border border-white/5'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Camera className="w-4 h-4" /> Gestão de Galeria
+          </span>
+        </button>
+      </section>
+
+      {activeTab === 'pedidos' && (<>
       {/* Barra de Filtros e Busca */}
       <section className="flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Filtros por status */}
@@ -411,7 +538,7 @@ export default function AdminPage() {
                       <>
                         <Disc className="w-4 h-4 text-[#e8c76b] shrink-0" />
                         <span className="text-xs font-semibold text-white truncate">
-                          EP Completo (Todas as 6 Faixas Master + Encarte 4K)
+                          EP Completo (Todas as 9 Faixas + Booklet 4K)
                         </span>
                       </>
                     ) : (
@@ -491,6 +618,81 @@ export default function AdminPage() {
           })
         )}
       </section>
+      </>)}
+
+      {activeTab === 'galeria' && (
+        <section className="flex flex-col gap-5">
+          {/* Upload de Nova Imagem */}
+          <div className="bg-[#1c1b1d] rounded-2xl p-5 border border-white/5 shadow-md flex flex-col gap-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Plus className="w-5 h-5 text-[#e8c76b]" /> Adicionar Nova Foto
+            </h2>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Descrição da foto (opcional)..."
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                className="flex-1 h-10 px-4 bg-[#201f21] rounded-xl text-xs text-white placeholder:text-[#98907e] border border-white/5 focus:border-[#e8c76b] focus:outline-none transition-all"
+              />
+              <label className={`h-10 px-5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 ${
+                uploading
+                  ? 'bg-[#2a2a2c] text-[#98907e] cursor-wait'
+                  : 'bg-gradient-to-r from-[#f3dc8f] via-[#e8c76b] to-[#d4af37] text-[#0b0b0d] hover:brightness-105 active:scale-95'
+              }`}>
+                <Upload className="w-4 h-4" />
+                {uploading ? 'A enviar...' : 'Escolher e Enviar Foto'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleGalleryUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Lista de Imagens */}
+          {galleryLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <span className="w-8 h-8 rounded-full border-2 border-[#e8c76b] border-t-transparent animate-spin" />
+            </div>
+          ) : galleryImages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-[#1c1b1d] rounded-2xl border border-white/5">
+              <ImageIcon className="w-12 h-12 text-[#98907e] mb-3" />
+              <p className="text-sm text-[#cfc5b2]">Nenhuma imagem na galeria. Adiciona a primeira acima!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {galleryImages.map((img) => (
+                <div key={img.id} className="group relative rounded-2xl overflow-hidden bg-[#1c1b1d] border border-white/5 shadow-md aspect-square">
+                  <img src={img.image_url} alt={img.description || 'Galeria'} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img)}
+                      className="opacity-0 group-hover:opacity-100 w-10 h-10 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-lg active:scale-90"
+                      title="Eliminar imagem"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  {img.description && (
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                      <p className="text-xs text-white font-medium">{img.description}</p>
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 text-[10px] text-white/60 bg-black/50 px-2 py-0.5 rounded-full">
+                    {new Date(img.created_at).toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Modal de Inspeção do Comprovativo */}
       {selectedProofUrl && (

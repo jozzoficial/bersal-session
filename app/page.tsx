@@ -11,7 +11,7 @@ import Footer from '@/components/Footer';
 import { INITIAL_TRACKS, DEFAULT_EP_SETTINGS } from '@/lib/constants';
 import { Track, EpSettings } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { Award, Music, Sparkles } from 'lucide-react';
+import { Award, Music } from 'lucide-react';
 
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
@@ -45,32 +45,32 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#131315]">
+    <div className="flex flex-col min-h-screen bg-[#09090f]">
       <Header />
 
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-32 flex flex-col">
         {/* Topo / Badges */}
         <section className="flex flex-col pt-4 pb-2">
           <div className="flex items-center justify-between mb-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1c1b1d] border border-white/5 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-[#e8c76b] animate-pulse" />
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#e8c76b] uppercase tracking-widest">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#16143a] border border-[#7c52ff]/25 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#e8517a] animate-pulse" />
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#a77fff] uppercase tracking-widest">
                 Versão Digital · Acesso Antecipado
               </span>
             </div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#cfc5b2] uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#6a6690] uppercase tracking-wider">
               Edição Limitada
             </span>
           </div>
 
           <div className="flex flex-col gap-1 my-2">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#e8c76b]">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#a77fff]">
               {settings.produtora} Apresenta
             </span>
             <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
               {settings.title}
             </h1>
-            <p className="text-sm sm:text-base text-[#cfc5b2] mt-1 leading-relaxed max-w-xl">
+            <p className="text-sm sm:text-base text-[#b5b0d5] mt-1 leading-relaxed max-w-xl">
               {settings.tagline}
             </p>
           </div>
@@ -88,14 +88,14 @@ export default function HomePage() {
         <section className="flex flex-col py-6">
           <div className="flex items-end justify-between mb-4">
             <div>
-              <span className="text-[11px] font-bold text-[#e8c76b] uppercase tracking-widest">
+              <span className="text-[11px] font-bold text-[#a77fff] uppercase tracking-widest">
                 Alinhamento
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
-                <Music className="w-6 h-6 text-[#e8c76b]" /> Faixas do EP
+                <Music className="w-6 h-6 text-[#e8517a]" /> Faixas do EP
               </h2>
             </div>
-            <span className="text-xs text-[#98907e]">Prévia de 30s</span>
+            <span className="text-xs text-[#6a6690]">Prévia de 30s</span>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -105,20 +105,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Bloco de Destaque: EP Completo a 4.000 Kz */}
+        {/* Bloco de Destaque: EP Completo */}
         <FullEpHiglight />
 
         {/* Selo de Garantia de Qualidade Analógica */}
         <section className="my-4">
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#1c1b1d] border border-white/5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#2a2a2c] flex items-center justify-center text-[#e8c76b] shrink-0 border border-white/5">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#16143a] border border-[#7c52ff]/20 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#1c1a42] flex items-center justify-center text-[#a77fff] shrink-0 border border-[#7c52ff]/25">
               <Award className="w-6 h-6" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-[#e8c76b] uppercase tracking-widest">
+              <span className="text-xs font-bold text-[#a77fff] uppercase tracking-widest">
                 Selo de Qualidade Sonora Bersal Studios
               </span>
-              <p className="text-xs text-[#cfc5b2] mt-0.5 leading-relaxed">
+              <p className="text-xs text-[#b5b0d5] mt-0.5 leading-relaxed">
                 Gravado e masterizado com pré-amplificadores valvulados e conversores analógico-digitais de nível profissional.
               </p>
             </div>

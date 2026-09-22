@@ -3,19 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Radio, LogOut, LayoutDashboard, Disc, ExternalLink } from 'lucide-react';
+import { Radio, LogOut, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLoginPage = pathname === '/admin/login';
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isLoginPage);
 
   useEffect(() => {
     // Se estiver na tela de login, não bloqueia
-    if (pathname === '/admin/login') {
-      setIsLoading(false);
+    if (isLoginPage) {
       return;
     }
 
@@ -38,10 +38,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       });
     } else {
       // Fallback gracioso local
-      setUserEmail('produtor@bersalstudios.com');
-      setIsLoading(false);
+      queueMicrotask(() => {
+        setUserEmail('produtor@bersalstudios.com');
+        setIsLoading(false);
+      });
     }
-  }, [pathname, router]);
+  }, [isLoginPage, router]);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -51,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login');
   };
 
-  if (isLoading && pathname !== '/admin/login') {
+  if (isLoading && !isLoginPage) {
     return (
       <div className="min-h-screen bg-[#0e0e10] flex items-center justify-center text-[#e8c76b]">
         <div className="w-8 h-8 border-2 border-[#e8c76b] border-t-transparent rounded-full animate-spin" />

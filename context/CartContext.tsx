@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Track } from '@/lib/types';
 import { DEFAULT_EP_SETTINGS } from '@/lib/constants';
 
@@ -25,25 +25,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isFullEp, setIsFullEp] = useState<boolean>(false);
   const fullEpPriceKz = DEFAULT_EP_SETTINGS.full_ep_price_kz;
 
+  const isLoadedRef = useRef(false);
+
   // Carregar do localStorage na inicialização
   useEffect(() => {
     try {
       const saved = localStorage.getItem('bersal_cart');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.isFullEp) {
-          setIsFullEp(true);
-          setSelectedTracks([]);
-        } else if (Array.isArray(parsed.selectedTracks)) {
-          setSelectedTracks(parsed.selectedTracks);
-          setIsFullEp(false);
-        }
+        queueMicrotask(() => {
+          if (parsed.isFullEp) {
+            setIsFullEp(true);
+            setSelectedTracks([]);
+          } else if (Array.isArray(parsed.selectedTracks)) {
+            setSelectedTracks(parsed.selectedTracks);
+            setIsFullEp(false);
+          }
+          isLoadedRef.current = true;
+        });
+        return;
       }
     } catch {}
+    isLoadedRef.current = true;
   }, []);
 
-  // Salvar no localStorage sempre que houver mudanças
+  // Salvar no localStorage sempre que houver mudanças após inicialização
   useEffect(() => {
+    if (!isLoadedRef.current) return;
     try {
       localStorage.setItem(
         'bersal_cart',

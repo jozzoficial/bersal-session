@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
@@ -29,7 +28,6 @@ import {
 } from 'lucide-react';
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const { selectedTracks, isFullEp, totalKz, totalItemsCount, orderType, clearCart } =
     useCart();
 
@@ -186,7 +184,6 @@ export default function CheckoutPage() {
 
     try {
       const supabase = createClient();
-      let uploadedUrl: string | null = null;
 
       if (supabase && orderId && !orderId.startsWith('local-')) {
         // Upload para o bucket 'comprovativos'
@@ -197,7 +194,6 @@ export default function CheckoutPage() {
           .upload(fileName, proofFile);
 
         if (!uploadError && uploadData) {
-          uploadedUrl = fileName;
           // Atualiza a linha do pedido com o proof_url
           await supabase
             .from('orders')
@@ -329,7 +325,7 @@ export default function CheckoutPage() {
                       EP COMPLETO BERSAL SESSION I
                     </h3>
                     <p className="text-xs text-[#cfc5b2]">
-                      6 Faixas WAV 24-bit + MP3 320k + Booklet Digital 4K
+                      9 Faixas MP3 320kbps + Booklet Digital 4K
                     </p>
                   </div>
                 </div>
@@ -600,9 +596,17 @@ export default function CheckoutPage() {
               {proofFile && (
                 <div className="bg-[#201f21] p-3 rounded-xl border border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-[#2ee59d]/15 text-[#78ffbd] flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5" />
-                    </div>
+                    {proofPreview ? (
+                      <img
+                        src={proofPreview}
+                        alt="Comprovativo"
+                        className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-[#2ee59d]/15 text-[#78ffbd] flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                    )}
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs">
                         {proofFile.name}
