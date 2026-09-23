@@ -26,7 +26,7 @@ export const INITIAL_TRACKS: Track[] = [
     track_number: 1,
     title: 'Mansony : Formato',
     duration_seconds: 180,
-    preview_url: '/audio/track1_preview.mp3',
+    preview_url: 'https://github.com/jozzoficial/bersal-session/releases/download/BERSAL_SESSION/1.FORMATO.-.PREVIEW.mp3',
     price_kz: 500,
     description: 'Faixa 1',
     is_featured: false,
