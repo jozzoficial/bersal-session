@@ -173,7 +173,7 @@ export default function Countdown({ targetDate }: CountdownProps) {
                 Pré-Venda & Prévias VIP
               </h4>
               <p className="text-[11px] text-[#b5b0d5] mt-1 leading-relaxed">
-                Audição de prévias em HD e reserva antecipada com desconto exclusivo de lançamento (4.000 Kz).
+                Audição de prévias em HD e venda com desconto exclusivo de lançamento (4.000 Kz).
               </p>
             </div>
             <div className="text-[10px] font-mono text-[#22d4a6] pt-1 border-t border-[#22d4a6]/15 flex items-center gap-1 font-semibold">
@@ -185,7 +185,7 @@ export default function Countdown({ targetDate }: CountdownProps) {
           <div className="relative p-3.5 rounded-xl bg-[#16143a]/70 border border-[#7c52ff]/25 flex flex-col justify-between gap-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold text-[#a77fff] tracking-wider uppercase bg-[#7c52ff]/15 px-2 py-0.5 rounded-full border border-[#7c52ff]/30">
-                Fase 02 · 30 Outubro
+                Fase 02 · 12 Outubro
               </span>
               <Clock className="w-3.5 h-3.5 text-[#a77fff]" />
             </div>
@@ -194,7 +194,7 @@ export default function Countdown({ targetDate }: CountdownProps) {
                 Liberação dos Masters
               </h4>
               <p className="text-[11px] text-[#b5b0d5] mt-1 leading-relaxed">
-                Envio prioritário do pacote completo com todas as 9 faixas MP3 320kbps + Encarte 4K aos compradores.
+                Publicação do single preview do projeto Bersal Session I.
               </p>
             </div>
             <div className="text-[10px] font-mono text-[#a77fff] pt-1 border-t border-[#7c52ff]/15 font-semibold">

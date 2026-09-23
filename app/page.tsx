@@ -223,7 +223,7 @@ export default function HomePage() {
                 Download Direto Sem Limites
               </h4>
               <p className="text-xs text-[#b5b0d5] leading-relaxed">
-                No dia de estreia você recebe link prioritário permanente para download em qualquer dispositivo.
+                Liberação das faixas compradas em menos de 1 hora,.
               </p>
             </div>
           </div>

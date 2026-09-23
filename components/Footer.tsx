@@ -18,7 +18,7 @@ export default function Footer() {
           </span>
         </div>
         <p className="text-xs text-[#6a6690]">
-          Produzido e Masterizado em Luanda, Angola · Distribuição Digital Direta
+          Produzido e Masterizado em Angola · Distribuição Digital Direta
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 my-2 text-xs">
