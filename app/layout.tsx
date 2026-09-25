@@ -19,42 +19,108 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
+  metadataBase: new URL('https://bersalsession.com'),
+  title: {
+    default: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
+    template: '%s | Bersal Studios',
+  },
   description:
-    'Acesso antecipado exclusivo ao EP BERSAL SESSION I da Bersal Studios. 9 faixas masterizadas em alta fidelidade analógica. Garanta o EP completo ou faixas individuais.',
+    'Acesso antecipado exclusivo ao EP BERSAL SESSION I da Bersal Studios em Uíge, Angola. 9 faixas masterizadas em alta fidelidade analógica. Garanta o EP completo ou faixas individuais.',
   keywords: [
     'Bersal Studios',
     'Bersal Session I',
-    'Afro House',
+    'Afro House Angola',
+    'Música Angolana',
+    'Uíge',
     'Pré-venda EP',
-    'Música Angola',
+    'Produtora Uíge',
     'Multicaixa Express',
+    'T-Beats',
   ],
-  authors: [{ name: 'Bersal Studios' }],
+  authors: [{ name: 'Bersal Studios', url: 'https://bersalsession.com' }],
+  creator: 'Bersal Studios',
+  publisher: 'Bersal Studios',
+  applicationName: 'BERSAL SESSION I',
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/img/logo.jpeg', type: 'image/jpeg' },
+      { url: '/favicon.ico' },
+    ],
+    shortcut: ['/favicon.ico'],
+    apple: [
+      { url: '/img/logo.jpeg', sizes: '180x180', type: 'image/jpeg' },
+    ],
+  },
   openGraph: {
     title: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
     description:
-      'Ouça as prévias de 30 segundos e garanta o seu acesso antecipado às 9 faixas em formato MP3 320kbps.',
+      'Acesso antecipado exclusivo às 9 faixas masterizadas em alta fidelidade. Ouça as prévias de 30 segundos e garanta já o seu exemplar.',
     url: 'https://bersalsession.com',
     siteName: 'Bersal Studios',
-    images: [
-      {
-        url: 'https://lh3.googleusercontent.com/aida/AEtjO1V5xlQjCaeihxIEaV0_jV7YLS0ahButBQ-K6RhDaaLRtlbW8POPAaeWJibotYFrSHA7WB0x7gXnaLZ-1HpfWT8Z7QuS0NuBzzoYnpP6F0IBXeDXxZPpX8cxwEd1788RZmdZIkoiETm5js57BHdVTcLAHRKnwiHSRm3XPkSwyJp2wohQqKOqQooR5vLHUL3xX_2UwJbymRaIaL0D9uS8lmr8WQljBth7YbPEixxDBkNesulY1E5AoGBPpJo',
-        width: 1024,
-        height: 1024,
-        alt: 'Capa Oficial BERSAL SESSION I',
-      },
-    ],
     locale: 'pt_AO',
     type: 'website',
+    images: [
+      {
+        url: '/img/cover.jpeg',
+        width: 1200,
+        height: 1200,
+        alt: 'Capa Oficial BERSAL SESSION I — Bersal Studios',
+      },
+      {
+        url: '/img/logo.jpeg',
+        width: 512,
+        height: 512,
+        alt: 'Logotipo Oficial Bersal Studios',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BERSAL SESSION I — Pré-Venda Oficial',
-    description: 'Acesso antecipado exclusivo às faixas em qualidade de estúdio analógico.',
-    images: [
-      'https://lh3.googleusercontent.com/aida/AEtjO1V5xlQjCaeihxIEaV0_jV7YLS0ahButBQ-K6RhDaaLRtlbW8POPAaeWJibotYFrSHA7WB0x7gXnaLZ-1HpfWT8Z7QuS0NuBzzoYnpP6F0IBXeDXxZPpX8cxwEd1788RZmdZIkoiETm5js57BHdVTcLAHRKnwiHSRm3XPkSwyJp2wohQqKOqQooR5vLHUL3xX_2UwJbymRaIaL0D9uS8lmr8WQljBth7YbPEixxDBkNesulY1E5AoGBPpJo',
-    ],
+    title: 'BERSAL SESSION I — Pré-Venda Oficial | Bersal Studios',
+    description:
+      'Acesso antecipado exclusivo às 9 faixas masterizadas em alta fidelidade analógica. Bersal Studios · Uíge, Angola.',
+    images: ['/img/cover.jpeg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://bersalsession.com',
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MusicAlbum',
+  name: 'BERSAL SESSION I',
+  byArtist: {
+    '@type': 'MusicGroup',
+    name: 'Bersal Studios',
+    url: 'https://bersalsession.com',
+    locationCreated: {
+      '@type': 'Place',
+      name: 'Uíge, Angola',
+    },
+  },
+  genre: ['Afro House', 'Instrumental', 'Electronic'],
+  numTracks: 9,
+  image: 'https://bersalsession.com/img/cover.jpeg',
+  description: 'EP BERSAL SESSION I — Pré-venda oficial por Bersal Studios em Uíge, Angola.',
+  offers: {
+    '@type': 'Offer',
+    price: '3000',
+    priceCurrency: 'AOA',
+    availability: 'https://schema.org/PreOrder',
+    url: 'https://bersalsession.com/comprar',
   },
 };
 
@@ -65,6 +131,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-AO" className={`${jakarta.variable} ${manrope.variable} dark`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="bg-[#09090f] text-[#ddd9f5] min-h-screen flex flex-col antialiased selection:bg-[#7c52ff]/30 selection:text-[#a77fff]">
         <AudioProvider>
           <CartProvider>

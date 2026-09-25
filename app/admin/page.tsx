@@ -21,87 +21,122 @@ import {
   Trash2,
   Plus,
   Image as ImageIcon,
+  Copy,
+  Download,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 import { Order, OrderStatus, GalleryImage } from '@/lib/types';
-import { formatKz } from '@/lib/constants';
+import { INITIAL_TRACKS, DEFAULT_EP_SETTINGS, formatKz, findTrackByIdOrNumber } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 
-const DEMO_ORDERS: Order[] = [
-  {
-    id: 'ord-1',
-    order_code: 'BS-8492',
-    buyer_name: 'Hamilton dos Santos',
-    buyer_email: 'hamilton.santos@gmail.com',
-    buyer_whatsapp: '+244923456789',
-    order_type: 'ep_completo',
-    total_kz: 4000,
-    proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-    status: 'pendente',
-    created_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'ord-2',
-    order_code: 'BS-8490',
-    buyer_name: 'Catarina Miraldina',
-    buyer_email: 'catarina.m@nexus.ao',
-    buyer_whatsapp: '+244944112233',
-    order_type: 'faixas',
-    total_kz: 500,
-    proof_url: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
-    status: 'pendente',
-    created_at: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
-    order_items: [
-      {
-        id: 'item-1',
-        order_id: 'ord-2',
-        track_id: 't-3',
-        price_kz: 500,
-        track: {
-          id: 't-3',
-          track_number: 3,
-          title: 'Ouro Líquido',
-          duration_seconds: 238,
-          preview_url: '',
-          price_kz: 500,
-        },
-      },
-    ],
-  },
-  {
-    id: 'ord-3',
-    order_code: 'BS-8488',
-    buyer_name: 'Dr. Edgar Massango',
-    buyer_email: 'edgar.massango@bna.ao',
-    buyer_whatsapp: '+244912998877',
-    order_type: 'ep_completo',
-    total_kz: 4000,
-    proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
-    status: 'confirmado',
-    created_at: new Date(Date.now() - 320 * 60 * 1000).toISOString(),
-    confirmed_at: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'ord-4',
-    order_code: 'BS-8480',
-    buyer_name: 'Ana Paula Lourenço',
-    buyer_email: 'anapaula.l@sonangol.co.ao',
-    buyer_whatsapp: '+244923118899',
-    order_type: 'ep_completo',
-    total_kz: 4000,
-    proof_url: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
-    status: 'entregue',
-    created_at: new Date(Date.now() - 1400 * 60 * 1000).toISOString(),
-    confirmed_at: new Date(Date.now() - 1200 * 60 * 1000).toISOString(),
-    delivered_at: new Date(Date.now() - 1000 * 60 * 1000).toISOString(),
-  },
-];
+export interface DeliveryItem {
+  track_number?: number;
+  title: string;
+  download_url: string;
+}
+
+export function getOrderDeliveryItems(order: Order): DeliveryItem[] {
+  if (order.order_type === 'ep_completo') {
+    return INITIAL_TRACKS.map((t) => ({
+      track_number: t.track_number,
+      title: t.title,
+      download_url: t.full_file_url || t.preview_url,
+    }));
+  }
+
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.map((item) => {
+      // Procura primeiro pelo UUID do Supabase ou ID do track
+      const found =
+        findTrackByIdOrNumber(item.track_id) ||
+        (item.track?.track_number ? findTrackByIdOrNumber(item.track.track_number) : undefined) ||
+        (item.track_title ? findTrackByIdOrNumber(item.track_title) : undefined);
+
+      const trackNumber =
+        found?.track_number ||
+        item.track?.track_number;
+
+      const title =
+        found?.title ||
+        item.track_title ||
+        item.track?.title ||
+        (trackNumber ? `Faixa 0${trackNumber}` : `Faixa`);
+
+      const downloadUrl =
+        found?.full_file_url ||
+        item.download_url ||
+        item.track?.full_file_url ||
+        found?.preview_url ||
+        '';
+
+      return {
+        track_number: trackNumber,
+        title,
+        download_url: downloadUrl,
+      };
+    });
+  }
+
+  return [
+    {
+      track_number: 1,
+      title: INITIAL_TRACKS[0].title,
+      download_url: INITIAL_TRACKS[0].full_file_url || '',
+    },
+  ];
+}
+
+export function getDeliveryMessage(order: Order, items: DeliveryItem[]): string {
+  const isEp = order.order_type === 'ep_completo';
+  const tracksList = items
+    .map(
+      (item) =>
+        `🎵 ${item.track_number ? `0${item.track_number}`.slice(-2) + ' · ' : ''}${item.title}\n🔗 ${item.download_url}`
+    )
+    .join('\n\n');
+
+  const zipLine =
+    isEp && DEFAULT_EP_SETTINGS.full_ep_zip_url
+      ? `\n📦 Pacote Completo (ZIP com 9 faixas + Encarte 4K):\n🔗 ${DEFAULT_EP_SETTINGS.full_ep_zip_url}\n`
+      : '';
+
+  return (
+    `Olá ${order.buyer_name}! 🎉\n\n` +
+    `Aqui é da produção da Bersal Studios.\n` +
+    `Confirmamos com sucesso o teu pagamento de ${formatKz(order.total_kz)} para o pedido #${order.order_code || order.id.slice(0, 8)} (${isEp ? 'EP COMPLETO BERSAL SESSION I' : 'Faixas Selecionadas'}).\n\n` +
+    `Seguem os teus links oficiais para download Master em alta resolução (MP3 320kbps):\n\n` +
+    `${tracksList}\n` +
+    `${zipLine}\n` +
+    `✦ Como baixar: Clica no link de cada faixa para descarregar diretamente para o teu telemóvel ou computador.\n\n` +
+    `Muito obrigado por apoiares a música independente!\n` +
+    `Bersal Studios · Uíge, Angola`
+  );
+}
+
+export function getProofFullUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const supabase = createClient();
+  if (supabase) {
+    const { data } = supabase.storage.from('comprovativos').getPublicUrl(url);
+    if (data?.publicUrl) return data.publicUrl;
+  }
+  return url;
+}
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'pedidos' | 'galeria'>('pedidos');
-  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | OrderStatus>('all');
   const [search, setSearch] = useState('');
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
+  const [selectedDeliveryOrder, setSelectedDeliveryOrder] = useState<Order | null>(null);
+  const [copiedDeliveryMessage, setCopiedDeliveryMessage] = useState(false);
+  const [copiedTrackUrl, setCopiedTrackUrl] = useState<string | null>(null);
 
   // Gallery state
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
@@ -110,31 +145,71 @@ export default function AdminPage() {
   const [newDescription, setNewDescription] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Carregar dados reais do Supabase
-  useEffect(() => {
+  // Buscar pedidos reais do Supabase (com fallback e mesclagem de pedidos locais)
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    let localOrders: Order[] = [];
+    try {
+      const stored = localStorage.getItem('bersal_orders');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          localOrders = parsed;
+        }
+      }
+    } catch {}
+
     const supabase = createClient();
     if (supabase) {
-      supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            price_kz,
-            track_id,
-            tracks:track_id (
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
               id,
-              title,
-              track_number
+              price_kz,
+              track_id,
+              track_title,
+              download_url
             )
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (!error && data && data.length > 0) {
-            setOrders(data as unknown as Order[]);
-          }
-        });
+          `)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const supabaseIds = new Set(data.map((d: { id: string }) => d.id));
+          const uniqueLocal = localOrders.filter((o) => !supabaseIds.has(o.id));
+          setOrders([...(data as unknown as Order[]), ...uniqueLocal]);
+        } else {
+          setOrders(localOrders);
+        }
+      } catch {
+        setOrders(localOrders);
+      }
+    } else {
+      setOrders(localOrders);
+    }
+    setOrdersLoading(false);
+  };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchOrders();
+    });
+
+    // Sincronização em tempo real via Supabase Realtime
+    const supabase = createClient();
+    if (supabase) {
+      const channel = supabase
+        .channel('admin-orders-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          fetchOrders();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, []);
 
@@ -220,7 +295,7 @@ export default function AdminPage() {
     setGalleryImages((prev) => prev.filter((i) => i.id !== img.id));
   };
 
-  // Ações de transição de status
+  // Ações de transição de status (persiste em Supabase e localStorage)
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     const supabase = createClient();
     const updates: Partial<Order> = { status: newStatus };
@@ -230,9 +305,25 @@ export default function AdminPage() {
       updates.delivered_at = new Date().toISOString();
     }
 
-    if (supabase && !orderId.startsWith('ord-')) {
-      await supabase.from('orders').update(updates).eq('id', orderId);
+    if (supabase && !orderId.startsWith('ord-') && !orderId.startsWith('local-')) {
+      try {
+        await supabase.from('orders').update(updates).eq('id', orderId);
+      } catch (e) {
+        console.warn('Erro ao atualizar status no Supabase:', e);
+      }
     }
+
+    // Atualiza também em localStorage
+    try {
+      const stored = localStorage.getItem('bersal_orders');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const updated = parsed.map((o: Order) =>
+          o.id === orderId ? { ...o, ...updates } : o
+        );
+        localStorage.setItem('bersal_orders', JSON.stringify(updated));
+      }
+    } catch {}
 
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, ...updates } : o))
@@ -427,37 +518,63 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Input de Busca */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98907e]" />
-          <input
-            type="text"
-            placeholder="Buscar por comprador, ref ou whatsapp..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-3 bg-[#1c1b1d] rounded-xl text-xs text-white placeholder:text-[#98907e] border border-white/5 focus:border-[#e8c76b] focus:outline-none transition-all"
-          />
+        {/* Input de Busca e Botão de Atualizar */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98907e]" />
+            <input
+              type="text"
+              placeholder="Buscar por comprador, ref ou whatsapp..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 bg-[#1c1b1d] rounded-xl text-xs text-white placeholder:text-[#98907e] border border-white/5 focus:border-[#e8c76b] focus:outline-none transition-all"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={fetchOrders}
+            disabled={ordersLoading}
+            className="h-10 px-3.5 rounded-xl bg-[#1c1b1d] hover:bg-[#2a2a2c] text-[#e8c76b] border border-white/5 text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+            title="Recarregar pedidos em tempo real"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${ordersLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </button>
         </div>
       </section>
 
       {/* Lista de Pedidos */}
       <section className="flex flex-col gap-3">
-        {filteredOrders.length === 0 ? (
-          <div className="p-12 text-center bg-[#1c1b1d] rounded-2xl border border-white/5 flex flex-col items-center justify-center">
-            <Disc className="w-10 h-10 text-[#98907e] mb-2" />
-            <p className="text-sm text-[#cfc5b2]">Nenhum pedido encontrado nesta visualização.</p>
+        {ordersLoading ? (
+          <div className="p-16 text-center bg-[#1c1b1d] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="w-8 h-8 text-[#e8c76b] animate-spin" />
+            <p className="text-xs text-[#cfc5b2]">A sincronizar pedidos com o Supabase...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="p-16 text-center bg-[#1c1b1d] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2">
+            <div className="w-12 h-12 rounded-xl bg-[#201f21] border border-white/5 flex items-center justify-center text-[#98907e] mb-1 shadow-inner">
+              <FileText className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-white">Nenhum pedido encontrado</h3>
+            <p className="text-xs text-[#98907e] max-w-sm">
+              {orders.length === 0
+                ? 'Ainda não há pedidos registados. Quando os ouvintes efetuarem compras na pré-venda, eles aparecerão aqui em tempo real.'
+                : 'Nenhum pedido corresponde aos filtros ou pesquisa selecionada.'}
+            </p>
           </div>
         ) : (
           filteredOrders.map((order) => {
             const cleanPhone = order.buyer_whatsapp.replace(/\D/g, '');
+            const deliveryItems = getOrderDeliveryItems(order);
+            const deliveryMessage = getDeliveryMessage(order, deliveryItems);
             const whatsappDirectLink = `https://wa.me/${cleanPhone.startsWith('244') ? cleanPhone : `244${cleanPhone}`}?text=${encodeURIComponent(
-              `Olá ${order.buyer_name}! Aqui é da Bersal Studios referente ao teu pedido ${order.order_code || ''} de ${formatKz(order.total_kz)} do EP BERSAL SESSION I. Segue aqui o link dos teus ficheiros Master:`
+              deliveryMessage
             )}`;
 
             return (
               <article
                 key={order.id}
-                className="bg-[#1c1b1d] rounded-2xl p-4 sm:p-5 border border-white/5 shadow-md flex flex-col gap-3 hover:border-white/10 transition-all"
+                className="bg-[#1c1b1d] rounded-2xl p-4 sm:p-5 border border-white/5 shadow-md flex flex-col gap-3.5 hover:border-white/10 transition-all"
               >
                 {/* Header do Card: Código, Horário e Status */}
                 <div className="flex items-center justify-between pb-2 border-b border-white/5">
@@ -478,20 +595,22 @@ export default function AdminPage() {
 
                   {/* Badge Colorido de Status */}
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${order.status === 'pendente'
-                      ? 'bg-[#e8c76b]/15 text-[#e8c76b] border border-[#e8c76b]/30'
-                      : order.status === 'confirmado'
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                      order.status === 'pendente'
+                        ? 'bg-[#e8c76b]/15 text-[#e8c76b] border border-[#e8c76b]/30'
+                        : order.status === 'confirmado'
                         ? 'bg-[#2ee59d]/15 text-[#78ffbd] border border-[#2ee59d]/30'
                         : 'bg-[#38bdf8]/15 text-[#38bdf8] border border-[#38bdf8]/30'
-                      }`}
+                    }`}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${order.status === 'pendente'
-                        ? 'bg-[#e8c76b] animate-ping'
-                        : order.status === 'confirmado'
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        order.status === 'pendente'
+                          ? 'bg-[#e8c76b] animate-ping'
+                          : order.status === 'confirmado'
                           ? 'bg-[#2ee59d]'
                           : 'bg-[#38bdf8]'
-                        }`}
+                      }`}
                     />
                     {order.status}
                   </span>
@@ -532,63 +651,113 @@ export default function AdminPage() {
                 </div>
 
                 {/* Itens Comprados & Comprovativo */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-[#201f21]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {order.order_type === 'ep_completo' ? (
-                      <>
-                        <Disc className="w-4 h-4 text-[#e8c76b] shrink-0" />
-                        <span className="text-xs font-semibold text-white truncate">
-                          EP Completo (Todas as 9 Faixas + Booklet 4K)
+                <div className="flex flex-col gap-2.5 p-3.5 rounded-xl bg-[#201f21] border border-white/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {order.order_type === 'ep_completo' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-[#e8c76b]/20 text-[#e8c76b] text-[10px] font-extrabold uppercase tracking-wider border border-[#e8c76b]/30">
+                            EP COMPLETO
+                          </span>
+                          <span className="text-xs font-bold text-white">
+                            Todas as 9 Faixas Master + Encarte 4K
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-[#7c52ff]/20 text-[#b599ff] text-[10px] font-extrabold uppercase tracking-wider border border-[#7c52ff]/30">
+                            {deliveryItems.length} {deliveryItems.length === 1 ? 'FAIXA SELECIONADA' : 'FAIXAS SELECIONADAS'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {order.proof_url ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProofUrl(getProofFullUrl(order.proof_url))}
+                          className="h-8 px-3 rounded-lg bg-[#2a2a2c] hover:bg-[#353437] text-[#e8c76b] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Ver Comprovativo</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-[#98907e] italic">
+                          Sem comprovativo anexado
                         </span>
-                      </>
-                    ) : (
-                      <>
-                        <Music className="w-4 h-4 text-[#e8c76b] shrink-0" />
-                        <span className="text-xs font-semibold text-white truncate">
-                          Faixas Individuais ({order.order_items?.length || 1} selecionada(s))
-                        </span>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    {order.proof_url ? (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProofUrl(order.proof_url!)}
-                        className="h-8 px-3 rounded-lg bg-[#2a2a2c] hover:bg-[#353437] text-[#e8c76b] text-xs font-bold flex items-center gap-1.5 transition-all"
+                  {/* Lista detalhada das músicas compradas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                    {deliveryItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[#181719] border border-white/5 text-xs"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Ver Comprovativo</span>
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-[#98907e] italic">
-                        Sem comprovativo anexado
-                      </span>
-                    )}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 h-5 rounded flex items-center justify-center bg-[#2a2a2c] text-[10px] font-mono font-bold text-[#e8c76b] shrink-0">
+                            {item.track_number ? `0${item.track_number}`.slice(-2) : '♪'}
+                          </span>
+                          <span className="font-semibold text-white truncate text-xs">
+                            {item.title}
+                          </span>
+                        </div>
+                        {item.download_url && (
+                          <a
+                            href={item.download_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="text-[11px] text-[#2ee59d] hover:underline shrink-0 font-medium"
+                          >
+                            Link Ativo
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Ações de Estado do Pedido */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
-                  {/* Botão de WhatsApp direto para entrega manual */}
-                  <a
-                    href={whatsappDirectLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto h-9 px-3 rounded-xl bg-[#00623f]/30 hover:bg-[#00623f]/60 text-[#78ffbd] border border-[#2ee59d]/20 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Entregar via WhatsApp</span>
-                  </a>
+                {/* Central de Ações & Entrega de Faixas */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-white/5">
+                  {/* Botão de Envio de Faixas */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDeliveryOrder(order)}
+                      className="h-9 px-4 rounded-xl bg-gradient-to-r from-[#e8517a] to-[#7c52ff] hover:brightness-110 text-white font-extrabold text-xs flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{order.status === 'entregue' ? 'Reenviar / Ver Ficheiros' : 'Mandar Faixas ao Cliente'}</span>
+                    </button>
+
+                    <a
+                      href={whatsappDirectLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        if (order.status !== 'entregue') {
+                          updateOrderStatus(order.id, 'entregue');
+                        }
+                      }}
+                      className="h-9 px-3.5 rounded-xl bg-[#00623f]/30 hover:bg-[#00623f]/60 text-[#78ffbd] border border-[#2ee59d]/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      title="Abre WhatsApp com mensagem completa e links das faixas"
+                    >
+                      <MessageCircle className="w-4 h-4 text-[#2ee59d]" />
+                      <span className="hidden sm:inline">WhatsApp Direto</span>
+                    </a>
+                  </div>
 
                   {/* Botões de Transição de Estado */}
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-2">
                     {order.status === 'pendente' && (
                       <button
                         type="button"
                         onClick={() => updateOrderStatus(order.id, 'confirmado')}
-                        className="flex-1 sm:flex-none h-9 px-4 rounded-xl bg-[#e8c76b] hover:bg-[#f3dc8f] text-[#0b0b0d] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                        className="h-9 px-4 rounded-xl bg-[#e8c76b] hover:bg-[#f3dc8f] text-[#0b0b0d] text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Confirmar Pagamento</span>
@@ -598,16 +767,16 @@ export default function AdminPage() {
                     {order.status === 'confirmado' && (
                       <button
                         type="button"
-                        onClick={() => updateOrderStatus(order.id, 'entregue')}
-                        className="flex-1 sm:flex-none h-9 px-4 rounded-xl bg-[#2ee59d] hover:bg-[#78ffbd] text-[#0b0b0d] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                        onClick={() => setSelectedDeliveryOrder(order)}
+                        className="h-9 px-4 rounded-xl bg-[#2ee59d] hover:bg-[#78ffbd] text-[#0b0b0d] text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
                       >
                         <Send className="w-4 h-4" />
-                        <span>Marcar como Entregue</span>
+                        <span>Entregar Agora</span>
                       </button>
                     )}
 
                     {order.status === 'entregue' && (
-                      <span className="text-xs font-semibold text-[#38bdf8] flex items-center gap-1 px-3 py-1 bg-[#38bdf8]/10 rounded-lg">
+                      <span className="text-xs font-semibold text-[#38bdf8] flex items-center gap-1.5 px-3 py-1.5 bg-[#38bdf8]/10 rounded-xl border border-[#38bdf8]/20">
                         <CheckCircle2 className="w-4 h-4" /> Entregue com Sucesso
                       </span>
                     )}
@@ -746,6 +915,215 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Modal / Central de Envio de Faixas para o Usuário */}
+      {selectedDeliveryOrder && (() => {
+        const cleanPhone = selectedDeliveryOrder.buyer_whatsapp.replace(/\D/g, '');
+        const items = getOrderDeliveryItems(selectedDeliveryOrder);
+        const fullMessage = getDeliveryMessage(selectedDeliveryOrder, items);
+        const whatsappUrl = `https://wa.me/${cleanPhone.startsWith('244') ? cleanPhone : `244${cleanPhone}`}?text=${encodeURIComponent(fullMessage)}`;
+        const mailtoUrl = `mailto:${selectedDeliveryOrder.buyer_email}?subject=${encodeURIComponent(
+          `Bersal Studios — Teus Ficheiros Master do EP BERSAL SESSION I (#${selectedDeliveryOrder.order_code || selectedDeliveryOrder.id.slice(0, 8)})`
+        )}&body=${encodeURIComponent(fullMessage)}`;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-[#181628] rounded-2xl border border-[#7c52ff]/30 max-w-2xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col my-auto">
+              {/* Header do Modal */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#7c52ff]/20 bg-[#121020]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#e8517a] to-[#7c52ff] flex items-center justify-center text-white shadow-md">
+                    <Send className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                      Central de Envio de Faixas
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#e8c76b]/15 text-[#ffe49e] border border-[#e8c76b]/30">
+                        #{selectedDeliveryOrder.order_code || selectedDeliveryOrder.id.slice(0, 8)}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-[#b5b0d5]">
+                      Destinatário: <strong className="text-white">{selectedDeliveryOrder.buyer_name}</strong> ({selectedDeliveryOrder.buyer_whatsapp})
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedDeliveryOrder(null)}
+                  className="w-8 h-8 rounded-full bg-[#201f35] text-[#b5b0d5] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Corpo do Modal com Scroll */}
+              <div className="p-4 sm:p-6 overflow-y-auto flex flex-col gap-4 text-xs text-[#cfc5b2]">
+                {/* Resumo do Pedido */}
+                <div className="p-3.5 rounded-xl bg-[#0f0e1c] border border-[#7c52ff]/20 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Disc className="w-4 h-4 text-[#e8c76b]" />
+                    <span className="text-white font-bold">
+                      {selectedDeliveryOrder.order_type === 'ep_completo'
+                        ? 'Pacote Completo (Todas as 9 Faixas Master + Encarte 4K)'
+                        : `Faixas Selecionadas (${items.length} faixa(s))`
+                      }
+                    </span>
+                  </div>
+                  <span className="text-sm font-extrabold text-[#e8c76b] font-mono">
+                    {formatKz(selectedDeliveryOrder.total_kz)}
+                  </span>
+                </div>
+
+                {/* Lista de Ficheiros Master Prontos para Download */}
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#a77fff] block mb-2">
+                    Ficheiros Master GitHub Releases ({items.length}):
+                  </span>
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    {items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#201d3a] border border-[#7c52ff]/15"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Music className="w-3.5 h-3.5 text-[#e8517a] shrink-0" />
+                          <span className="font-bold text-white truncate text-xs">
+                            {item.title}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Testar / Baixar */}
+                          <a
+                            href={item.download_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-[#2a264a] hover:bg-[#34305c] text-[#a77fff] hover:text-white font-semibold text-[11px] flex items-center gap-1 transition-all"
+                            title="Descarregar ficheiro para testar"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Baixar</span>
+                          </a>
+
+                          {/* Copiar Link */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(item.download_url);
+                              setCopiedTrackUrl(item.download_url);
+                              setTimeout(() => setCopiedTrackUrl(null), 2000);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#2a264a] hover:bg-[#34305c] text-[#cfc5b2] hover:text-white font-semibold text-[11px] flex items-center gap-1 transition-all"
+                            title="Copiar link direto"
+                          >
+                            {copiedTrackUrl === item.download_url ? (
+                              <Check className="w-3 h-3 text-[#2ee59d]" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            <span>{copiedTrackUrl === item.download_url ? 'Copiado' : 'Link'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Visualização da Mensagem de Entrega Formatada */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#a77fff]">
+                      Mensagem de Entrega Formatada:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(fullMessage);
+                        setCopiedDeliveryMessage(true);
+                        setTimeout(() => setCopiedDeliveryMessage(false), 2500);
+                      }}
+                      className="text-[11px] text-[#e8c76b] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                    >
+                      {copiedDeliveryMessage ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-[#2ee59d]" />
+                          <span>Mensagem Copiada!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copiar Tudo</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <pre className="p-3 bg-[#0a0914] rounded-xl border border-[#7c52ff]/20 text-[11px] text-[#b5b0d5] whitespace-pre-wrap font-sans max-h-40 overflow-y-auto leading-relaxed select-all">
+                    {fullMessage}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Ações Inferiores de Entrega Imediata */}
+              <div className="p-4 sm:p-5 border-t border-[#7c52ff]/20 bg-[#121020] flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDeliveryOrder(null)}
+                  className="px-4 py-2.5 rounded-xl bg-[#201d3a] hover:bg-[#282448] text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Enviar via WhatsApp */}
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      updateOrderStatus(selectedDeliveryOrder.id, 'entregue');
+                      setSelectedDeliveryOrder(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#007a4d] hover:bg-[#00945d] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4 text-white" />
+                    <span>Enviar via WhatsApp (1-Clique)</span>
+                  </a>
+
+                  {/* Enviar via Email */}
+                  <a
+                    href={mailtoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      updateOrderStatus(selectedDeliveryOrder.id, 'entregue');
+                      setSelectedDeliveryOrder(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#2a264a] hover:bg-[#34305c] text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Mail className="w-4 h-4 text-[#a77fff]" />
+                    <span>E-mail</span>
+                  </a>
+
+                  {/* Marcar como Entregue sem abrir links */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateOrderStatus(selectedDeliveryOrder.id, 'entregue');
+                      setSelectedDeliveryOrder(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-[#2ee59d] hover:bg-[#78ffbd] text-[#0b0b0d] font-extrabold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Concluir Entrega</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

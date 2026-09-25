@@ -4,6 +4,7 @@ export interface Track {
   track_number: number;
   duration_seconds: number;
   preview_url: string;
+  full_file_url?: string;
   price_kz: number;
   description?: string;
   is_featured?: boolean;
@@ -17,6 +18,7 @@ export interface EpSettings {
   cover_url?: string;
   full_ep_price_kz: number;
   release_at: string;
+  full_ep_zip_url?: string;
   payment_multicaixa_express?: string;
   payment_entidade?: string;
   payment_referencia?: string;
@@ -29,6 +31,8 @@ export interface OrderItem {
   id: string;
   order_id: string;
   track_id: string;
+  track_title?: string;
+  download_url?: string;
   price_kz: number;
   track?: Track;
 }

@@ -11,14 +11,16 @@ export default function Footer() {
   return (
     <footer className="w-full mt-auto py-10 px-4 sm:px-6 border-t border-[#7c52ff]/12 bg-[#0a091a] text-center">
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Disc className="w-4 h-4 text-[#a77fff]" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-[#7c52ff]/40 shadow-[0_0_8px_rgba(124,82,255,0.3)]">
+            <img src="/img/logo.jpeg" alt="Bersal Studios Logo" className="w-full h-full object-cover" />
+          </div>
           <span className="text-xs font-extrabold text-white tracking-widest uppercase">
             Bersal Studios
           </span>
         </div>
         <p className="text-xs text-[#6a6690]">
-          Produzido e Masterizado em Angola · Distribuição Digital Direta
+          Produzido e Masterizado no Uíge, Angola · Distribuição Digital Direta
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 my-2 text-xs">
@@ -27,7 +29,7 @@ export default function Footer() {
           </span>
           <span className="w-1 h-1 rounded-full bg-[#7c52ff]/40" />
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/profile.php?id=61553376871678"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-[#7c9fff] hover:text-white transition-colors"

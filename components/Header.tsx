@@ -57,7 +57,7 @@ export default function Header() {
 
           {/* Redes Sociais */}
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/profile.php?id=61553376871678"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex p-2 rounded-full border bg-[#16143a] text-[#b5b0d5] hover:text-[#7c9fff] border-[#7c52ff]/20 hover:border-[#7c9fff]/50 hover:bg-[#1c1a42] transition-all"

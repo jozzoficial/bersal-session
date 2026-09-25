@@ -19,21 +19,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
 
+    // Verificar se existe sessão local/offline ativa (permite operar sem Supabase configurado)
+    if (typeof window !== 'undefined') {
+      const localAdmin = localStorage.getItem('bersal_admin_session');
+      if (localAdmin === 'true') {
+        const savedEmail = localStorage.getItem('bersal_admin_email') || 'produtor@bersalstudios.com';
+        queueMicrotask(() => {
+          setUserEmail(savedEmail);
+          setIsLoading(false);
+        });
+        return;
+      }
+    }
+
     const supabase = createClient();
     if (supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
-          // Se não houver sessão ativa e estiver em produção com Supabase, redireciona para login
-          // Se estiver em modo local sem chaves Supabase, permite visualização do painel em modo demonstrativo
-          const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-          if (hasSupabaseUrl) {
-            router.push('/admin/login');
-          } else {
-            setUserEmail('produtor@bersalstudios.com');
-          }
+          // Se não houver sessão ativa no Supabase e nem sessão local
+          router.push('/admin/login');
         } else {
           setUserEmail(session.user.email ?? 'admin@bersalstudios.com');
         }
+        setIsLoading(false);
+      }).catch(() => {
+        // Fallback caso ocorra erro de conexão com Supabase
+        setUserEmail('produtor@bersalstudios.com');
         setIsLoading(false);
       });
     } else {
@@ -46,9 +57,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [isLoginPage, router]);
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bersal_admin_session');
+      localStorage.removeItem('bersal_admin_email');
+    }
     const supabase = createClient();
     if (supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignora erro de signout se supabase não estiver conectado
+      }
     }
     router.push('/admin/login');
   };
@@ -67,9 +86,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="sticky top-0 z-40 bg-[#0e0e10]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-6xl mx-auto h-16 px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-[#201f21] border border-[#e8c76b]/20 flex items-center justify-center text-[#e8c76b]">
-                <Radio className="w-4 h-4" />
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-[#201f21] border border-[#e8c76b]/20 flex items-center justify-center overflow-hidden">
+                <img src="/img/logo.jpeg" alt="Bersal Studios" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-[#e8c76b] uppercase tracking-widest">

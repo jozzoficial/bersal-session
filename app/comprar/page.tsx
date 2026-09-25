@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { DEFAULT_PAYMENT, formatKz } from '@/lib/constants';
+import { Order } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import confetti from 'canvas-confetti';
 import {
@@ -103,6 +104,7 @@ export default function CheckoutPage() {
       const genCode = `BS-${Math.floor(1000 + Math.random() * 9000)}`;
       setOrderCode(genCode);
 
+      let supabaseOrderId: string | null = null;
       const supabase = createClient();
       if (supabase) {
         // Criar pedido no Supabase
@@ -123,25 +125,56 @@ export default function CheckoutPage() {
         if (orderError) {
           console.warn('Erro ao inserir pedido no Supabase:', orderError);
         } else if (orderData) {
+          supabaseOrderId = orderData.id;
           setOrderId(orderData.id);
 
-          // Se for compra por faixas individuais, insere os order_items
+          // Se for compra por faixas individuais, insere os order_items completos
           if (orderType === 'faixas' && selectedTracks.length > 0) {
             const items = selectedTracks.map((t) => ({
               order_id: orderData.id,
-              track_id: t.id.startsWith('track-') ? undefined : t.id,
+              track_id: t.id,
+              track_title: t.title,
+              download_url: t.full_file_url || t.preview_url,
               price_kz: t.price_kz,
             }));
 
-            // Só insere se IDs forem válidos no banco
-            if (!selectedTracks[0].id.startsWith('track-')) {
-              await supabase.from('order_items').insert(items);
-            }
+            await supabase.from('order_items').insert(items);
           }
         }
-      } else {
-        // Fallback local caso Supabase não esteja conectado ainda
-        setOrderId(`local-${Date.now()}`);
+      }
+
+      const activeOrderId = supabaseOrderId || `local-${Date.now()}`;
+      setOrderId(activeOrderId);
+
+      // Salvar backup em localStorage para garantir que nada se perca mesmo sem Supabase
+      try {
+        const existing = JSON.parse(localStorage.getItem('bersal_orders') || '[]');
+        const newLocalOrder: Order = {
+          id: activeOrderId,
+          order_code: genCode,
+          buyer_name: buyerName.trim(),
+          buyer_email: buyerEmail.trim(),
+          buyer_whatsapp: buyerWhatsapp.trim(),
+          order_type: orderType,
+          total_kz: totalKz,
+          status: 'pendente',
+          created_at: new Date().toISOString(),
+          order_items:
+            orderType === 'faixas'
+              ? selectedTracks.map((t, idx) => ({
+                  id: `item-${Date.now()}-${idx}`,
+                  order_id: activeOrderId,
+                  track_id: t.id,
+                  track_title: t.title,
+                  download_url: t.full_file_url || t.preview_url,
+                  price_kz: t.price_kz,
+                  track: t,
+                }))
+              : undefined,
+        };
+        localStorage.setItem('bersal_orders', JSON.stringify([newLocalOrder, ...existing.filter((o: Order) => o.id !== activeOrderId)]));
+      } catch {
+        console.warn('Erro ao salvar localmente:', e);
       }
 
       setStep(2);
@@ -184,6 +217,7 @@ export default function CheckoutPage() {
 
     try {
       const supabase = createClient();
+      let uploadedProofUrl: string | null = proofPreview;
 
       if (supabase && orderId && !orderId.startsWith('local-')) {
         // Upload para o bucket 'comprovativos'
@@ -194,6 +228,7 @@ export default function CheckoutPage() {
           .upload(fileName, proofFile);
 
         if (!uploadError && uploadData) {
+          uploadedProofUrl = fileName;
           // Atualiza a linha do pedido com o proof_url
           await supabase
             .from('orders')
@@ -201,6 +236,15 @@ export default function CheckoutPage() {
             .eq('id', orderId);
         }
       }
+
+      // Atualiza também no localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem('bersal_orders') || '[]');
+        const updated = existing.map((o: Order) =>
+          o.id === orderId ? { ...o, proof_url: uploadedProofUrl || proofPreview } : o
+        );
+        localStorage.setItem('bersal_orders', JSON.stringify(updated));
+      } catch {}
 
       // Disparar efeito comemorativo
       try {

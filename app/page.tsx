@@ -11,13 +11,11 @@ import Footer from '@/components/Footer';
 import { INITIAL_TRACKS, DEFAULT_EP_SETTINGS } from '@/lib/constants';
 import { Track, EpSettings } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { Award, Music, Disc, Headphones, Sparkles, ChevronDown, ShieldCheck, Zap } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { Award, Music, Disc, Headphones, Sparkles, ShieldCheck, Zap } from 'lucide-react';
 
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
   const [settings, setSettings] = useState<EpSettings>(DEFAULT_EP_SETTINGS);
-  const { selectFullEp } = useCart();
 
   useEffect(() => {
     // Buscar faixas e configurações atualizadas do Supabase se configurado

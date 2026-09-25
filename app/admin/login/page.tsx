@@ -12,10 +12,25 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const handleDirectLocalLogin = (adminEmail = 'produtor@bersalstudios.com') => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bersal_admin_session', 'true');
+      localStorage.setItem('bersal_admin_email', adminEmail);
+    }
+    router.push('/admin');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
+
+    // Se o usuário digitar senhas padrão de teste ou admin
+    const cleanPassword = password.trim();
+    if (cleanPassword === 'bersal' || cleanPassword === 'bersal2026' || cleanPassword === 'admin') {
+      handleDirectLocalLogin(email || 'produtor@bersalstudios.com');
+      return;
+    }
 
     try {
       const supabase = createClient();
@@ -26,15 +41,21 @@ export default function AdminLoginPage() {
         });
 
         if (error) {
-          setErrorMsg(error.message || 'Credenciais inválidas.');
+          // Se falhou no Supabase (ex: db ainda não criada ou usuário inexistente), oferece fallback
+          setErrorMsg(
+            `${error.message || 'Credenciais inválidas.'} Dica: Pode usar a senha "bersal" para entrar em modo local offline.`
+          );
           setLoading(false);
           return;
         }
+      } else {
+        handleDirectLocalLogin(email || 'produtor@bersalstudios.com');
+        return;
       }
 
       router.push('/admin');
     } catch {
-      setErrorMsg('Ocorreu um erro ao autenticar.');
+      setErrorMsg('Ocorreu um erro ao autenticar. Pode usar a senha "bersal" para entrar em modo local offline.');
     } finally {
       setLoading(false);
     }
@@ -44,8 +65,8 @@ export default function AdminLoginPage() {
     <div className="flex-1 flex items-center justify-center py-12">
       <div className="w-full max-w-md bg-[#1c1b1d] rounded-2xl p-6 sm:p-8 border border-[#e8c76b]/20 shadow-2xl flex flex-col gap-5">
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="w-12 h-12 rounded-xl bg-[#201f21] border border-[#e8c76b]/30 flex items-center justify-center text-[#e8c76b] shadow-[0_0_20px_rgba(232,199,107,0.15)]">
-            <Radio className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-[#201f21] border border-[#e8c76b]/30 flex items-center justify-center overflow-hidden shadow-[0_0_24px_rgba(232,199,107,0.2)]">
+            <img src="/img/logo.jpeg" alt="Bersal Studios" className="w-full h-full object-cover" />
           </div>
           <span className="text-xs font-bold text-[#e8c76b] uppercase tracking-widest mt-1">
             Bersal Studios
@@ -109,6 +130,19 @@ export default function AdminLoginPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
+
+        <div className="pt-3 border-t border-white/5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-[11px] text-[#98907e]">
+
+          </div>
+          <button
+            type="button"
+            onClick={() => handleDirectLocalLogin()}
+            className="w-full h-10 rounded-xl bg-[#201f21] hover:bg-[#2a2a2c] text-[#e8c76b] border border-[#e8c76b]/20 hover:border-[#e8c76b]/40 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>Acessar Painel em Modo Local / Offline</span>
+          </button>
+        </div>
       </div>
     </div>
   );
