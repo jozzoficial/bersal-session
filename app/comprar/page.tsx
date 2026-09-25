@@ -48,6 +48,7 @@ export default function CheckoutPage() {
   // Dados do pedido gerado
   const [orderId, setOrderId] = useState<string>('');
   const [orderCode, setOrderCode] = useState<string>('');
+  const [confirmedTotalKz, setConfirmedTotalKz] = useState<number>(0);
 
   // Comprovativo
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -88,8 +89,8 @@ export default function CheckoutPage() {
     );
   }
 
-  // 1. Criar o pedido inicial e avançar para o passo do pagamento
-  const handleProceedToPayment = async (e: React.FormEvent) => {
+  // 1. Validar identificação e avançar para o passo do pagamento (sem gravar na BD ainda)
+  const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -98,93 +99,14 @@ export default function CheckoutPage() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
+    if (!orderCode) {
       const genCode = `BS-${Math.floor(1000 + Math.random() * 9000)}`;
       setOrderCode(genCode);
-
-      let supabaseOrderId: string | null = null;
-      const supabase = createClient();
-      if (supabase) {
-        // Criar pedido no Supabase
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            order_code: genCode,
-            buyer_name: buyerName.trim(),
-            buyer_email: buyerEmail.trim(),
-            buyer_whatsapp: buyerWhatsapp.trim(),
-            order_type: orderType,
-            total_kz: totalKz,
-            status: 'pendente',
-          })
-          .select('id')
-          .single();
-
-        if (orderError) {
-          console.warn('Erro ao inserir pedido no Supabase:', orderError);
-        } else if (orderData) {
-          supabaseOrderId = orderData.id;
-          setOrderId(orderData.id);
-
-          // Se for compra por faixas individuais, insere os order_items completos
-          if (orderType === 'faixas' && selectedTracks.length > 0) {
-            const items = selectedTracks.map((t) => ({
-              order_id: orderData.id,
-              track_id: t.id,
-              track_title: t.title,
-              download_url: t.full_file_url || t.preview_url,
-              price_kz: t.price_kz,
-            }));
-
-            await supabase.from('order_items').insert(items);
-          }
-        }
-      }
-
-      const activeOrderId = supabaseOrderId || `local-${Date.now()}`;
-      setOrderId(activeOrderId);
-
-      // Salvar backup em localStorage para garantir que nada se perca mesmo sem Supabase
-      try {
-        const existing = JSON.parse(localStorage.getItem('bersal_orders') || '[]');
-        const newLocalOrder: Order = {
-          id: activeOrderId,
-          order_code: genCode,
-          buyer_name: buyerName.trim(),
-          buyer_email: buyerEmail.trim(),
-          buyer_whatsapp: buyerWhatsapp.trim(),
-          order_type: orderType,
-          total_kz: totalKz,
-          status: 'pendente',
-          created_at: new Date().toISOString(),
-          order_items:
-            orderType === 'faixas'
-              ? selectedTracks.map((t, idx) => ({
-                  id: `item-${Date.now()}-${idx}`,
-                  order_id: activeOrderId,
-                  track_id: t.id,
-                  track_title: t.title,
-                  download_url: t.full_file_url || t.preview_url,
-                  price_kz: t.price_kz,
-                  track: t,
-                }))
-              : undefined,
-        };
-        localStorage.setItem('bersal_orders', JSON.stringify([newLocalOrder, ...existing.filter((o: Order) => o.id !== activeOrderId)]));
-      } catch {
-        console.warn('Erro ao salvar localmente:', e);
-      }
-
-      setStep(2);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.error('Falha no processo:', err);
-      setErrorMessage('Ocorreu um erro ao registrar o pedido. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
     }
+    setConfirmedTotalKz(totalKz);
+
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // 2. Upload do comprovativo
@@ -205,7 +127,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // 3. Confirmar envio do comprovativo
+  // 3. Confirmar envio do comprovativo e registar o pedido na Base de Dados
   const handleSubmitProof = async () => {
     if (!proofFile) {
       setErrorMessage('Por favor, seleciona o ficheiro do comprovativo antes de concluir.');
@@ -215,38 +137,108 @@ export default function CheckoutPage() {
     setIsUploadingProof(true);
     setErrorMessage('');
 
+    const activeOrderCode = orderCode || `BS-${Math.floor(1000 + Math.random() * 9000)}`;
+    setOrderCode(activeOrderCode);
+    const finalAmount = confirmedTotalKz || totalKz;
+
     try {
       const supabase = createClient();
-      let uploadedProofUrl: string | null = proofPreview;
+      let uploadedFileName: string | null = null;
 
-      if (supabase && orderId && !orderId.startsWith('local-')) {
-        // Upload para o bucket 'comprovativos'
-        const fileExt = proofFile.name.split('.').pop();
-        const fileName = `${orderId}-${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
+      // A) Upload para o bucket 'comprovativos' no Supabase Storage
+      if (supabase) {
+        const fileExt = proofFile.name.split('.').pop() || 'pdf';
+        uploadedFileName = `${activeOrderCode}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
           .from('comprovativos')
-          .upload(fileName, proofFile);
+          .upload(uploadedFileName, proofFile);
 
-        if (!uploadError && uploadData) {
-          uploadedProofUrl = fileName;
-          // Atualiza a linha do pedido com o proof_url
-          await supabase
-            .from('orders')
-            .update({ proof_url: fileName })
-            .eq('id', orderId);
+        if (uploadError) {
+          console.warn('Erro ao fazer upload do comprovativo para o storage:', uploadError);
         }
       }
 
-      // Atualiza também no localStorage
+      // B) Gravar o pedido no Supabase
+      let supabaseOrderId: string | null = null;
+      if (supabase) {
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            order_code: activeOrderCode,
+            buyer_name: buyerName.trim(),
+            buyer_email: buyerEmail.trim(),
+            buyer_whatsapp: buyerWhatsapp.trim(),
+            order_type: orderType,
+            total_kz: finalAmount,
+            proof_url: uploadedFileName || null,
+            status: 'pendente',
+          })
+          .select('id')
+          .single();
+
+        if (orderError) {
+          console.error('Erro ao registrar pedido:', orderError);
+          throw new Error('Falha ao registar o pedido na base de dados.');
+        }
+
+        if (orderData) {
+          supabaseOrderId = orderData.id;
+          setOrderId(orderData.id);
+
+          // Se for compra por faixas individuais, insere os order_items com URLs
+          if (orderType === 'faixas' && selectedTracks.length > 0) {
+            const items = selectedTracks.map((t) => ({
+              order_id: orderData.id,
+              track_id: t.id,
+              track_title: t.title,
+              download_url: t.full_file_url || t.preview_url,
+              price_kz: t.price_kz,
+            }));
+
+            const { error: itemsError } = await supabase.from('order_items').insert(items);
+            if (itemsError) {
+              console.warn('Erro ao inserir itens do pedido:', itemsError);
+            }
+          }
+        }
+      }
+
+      const activeOrderId = supabaseOrderId || `local-${Date.now()}`;
+      setOrderId(activeOrderId);
+
+      // C) Salvar backup em localStorage para suporte offline/local
       try {
         const existing = JSON.parse(localStorage.getItem('bersal_orders') || '[]');
-        const updated = existing.map((o: Order) =>
-          o.id === orderId ? { ...o, proof_url: uploadedProofUrl || proofPreview } : o
-        );
-        localStorage.setItem('bersal_orders', JSON.stringify(updated));
-      } catch {}
+        const newLocalOrder: Order = {
+          id: activeOrderId,
+          order_code: activeOrderCode,
+          buyer_name: buyerName.trim(),
+          buyer_email: buyerEmail.trim(),
+          buyer_whatsapp: buyerWhatsapp.trim(),
+          order_type: orderType,
+          total_kz: finalAmount,
+          proof_url: uploadedFileName || proofPreview,
+          status: 'pendente',
+          created_at: new Date().toISOString(),
+          order_items:
+            orderType === 'faixas'
+              ? selectedTracks.map((t, idx) => ({
+                  id: `item-${Date.now()}-${idx}`,
+                  order_id: activeOrderId,
+                  track_id: t.id,
+                  track_title: t.title,
+                  download_url: t.full_file_url || t.preview_url,
+                  price_kz: t.price_kz,
+                  track: t,
+                }))
+              : undefined,
+        };
+        localStorage.setItem('bersal_orders', JSON.stringify([newLocalOrder, ...existing.filter((o: Order) => o.id !== activeOrderId)]));
+      } catch (e) {
+        console.warn('Erro ao salvar localmente:', e);
+      }
 
-      // Disparar efeito comemorativo
+      // D) Disparar efeito comemorativo
       try {
         confetti({
           particleCount: 80,
@@ -259,9 +251,9 @@ export default function CheckoutPage() {
       clearCart();
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao enviar comprovativo:', err);
-      setErrorMessage('Falha ao enviar comprovativo. Tente novamente.');
+      setErrorMessage(err?.message || 'Falha ao processar o comprovativo. Tente novamente.');
     } finally {
       setIsUploadingProof(false);
     }
@@ -487,10 +479,9 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full h-13 mt-2 rounded-xl bg-gradient-to-r from-[#f3dc8f] via-[#e8c76b] to-[#d4af37] text-[#0b0b0d] font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(232,199,107,0.3)] hover:brightness-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                className="w-full h-13 mt-2 rounded-xl bg-gradient-to-r from-[#f3dc8f] via-[#e8c76b] to-[#d4af37] text-[#0b0b0d] font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(232,199,107,0.3)] hover:brightness-105 active:scale-95 transition-all cursor-pointer"
               >
-                {isSubmitting ? 'A registrar pedido...' : 'Avançar para Pagamento'}
+                Avançar para Pagamento
               </button>
             </form>
           </div>
@@ -501,6 +492,19 @@ export default function CheckoutPage() {
         ========================================================================= */}
         {step === 2 && (
           <div className="flex flex-col gap-5">
+            {/* Botão Voltar ao Passo 1 */}
+            <button
+              type="button"
+              onClick={() => {
+                setErrorMessage('');
+                setStep(1);
+              }}
+              className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#201f21] hover:bg-[#2a2a2c] text-xs font-semibold text-[#cfc5b2] hover:text-white border border-white/5 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-[#e8c76b]" />
+              <span>Voltar e editar dados de contacto</span>
+            </button>
+
             {/* Box com Dados de Pagamento */}
             <div className="bg-[#1c1b1d] rounded-2xl p-5 border border-[#e8c76b]/30 shadow-2xl relative overflow-hidden flex flex-col gap-4">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#ffe49e] via-[#e8c76b] to-[#d4af37]" />
@@ -516,7 +520,7 @@ export default function CheckoutPage() {
               </div>
 
               <p className="text-xs text-[#cfc5b2]">
-                Transfere exatamente <strong className="text-[#ffe49e] font-mono">{formatKz(totalKz)}</strong> por um dos métodos certificados abaixo:
+                Transfere exatamente <strong className="text-[#ffe49e] font-mono">{formatKz(confirmedTotalKz || totalKz)}</strong> por um dos métodos certificados abaixo:
               </p>
 
               {/* Opção A: Multicaixa Express */}
@@ -734,7 +738,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between pt-1 border-t border-white/5">
                 <span className="text-[#98907e]">Valor Total:</span>
-                <span className="text-[#ffe49e] font-mono font-bold">{formatKz(totalKz)}</span>
+                <span className="text-[#ffe49e] font-mono font-bold">{formatKz(confirmedTotalKz || totalKz)}</span>
               </div>
             </div>
 
