@@ -26,8 +26,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const stopPlayback = () => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch {}
     }
     if (synthControllerRef.current) {
       synthControllerRef.current.stop();
@@ -60,79 +62,121 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }, 250);
   };
 
-  useEffect(() => {
-    audioRef.current = new Audio();
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      stopAllSynthesizedPreviews();
-    };
-  }, []);
+  // Resolução da URL da prévia com prioridade para ficheiros MP3 locais
+  const resolveAudioUrl = (trackNumber: number, url?: string): string => {
+    // Se a URL for do GitHub releases, redirecionamos para o ficheiro local compatível com iOS
+    if (!url || url.includes('github.com/jozzoficial/bersal-session/releases') || url.includes('track5_preview')) {
+      return `/audio/previews/track-${trackNumber}.mp3`;
+    }
+    return url;
+  };
 
   const togglePlay = (trackNumber: number, previewUrl?: string) => {
-    // Se já estiver tocando esta mesma faixa, pausa
+    const audio = audioRef.current;
+
+    // Se já estiver a reproduzir esta mesma faixa, pausa
     if (activeTrackNumber === trackNumber && isPlaying) {
-      if (audioRef.current) audioRef.current.pause();
+      if (audio) {
+        try {
+          audio.pause();
+        } catch {}
+      }
       if (synthControllerRef.current) {
         synthControllerRef.current.stop();
         synthControllerRef.current = null;
       }
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setIsPlaying(false);
       return;
     }
 
-    // Para qualquer outra faixa ativa antes de começar a nova
-    stopPlayback();
+    // Se estiver a reproduzir outra faixa, pára primeiro
+    if (audio) {
+      try {
+        audio.pause();
+      } catch {}
+    }
+    if (synthControllerRef.current) {
+      synthControllerRef.current.stop();
+      synthControllerRef.current = null;
+    }
+    stopAllSynthesizedPreviews();
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
 
     setActiveTrackNumber(trackNumber);
     setIsPlaying(true);
     setCurrentTime(0);
 
-    // Tentar tocar arquivo de áudio real se url for válido e não-demo
-    if (previewUrl && previewUrl.startsWith('http')) {
-      if (audioRef.current) {
-        audioRef.current.src = previewUrl;
-        audioRef.current.onended = () => {
-          stopPlayback();
-        };
-        audioRef.current.onerror = () => {
-          startSynthPlayback(trackNumber);
-        };
-        audioRef.current
-          .play()
+    const targetUrl = resolveAudioUrl(trackNumber, previewUrl);
+
+    if (audio) {
+      // Configurar propriedades essenciais para iOS Safari / WebKit
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
+      audio.preload = 'auto';
+      audio.src = targetUrl;
+      audio.currentTime = 0;
+      audio.load();
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
           .then(() => {
-            if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-            progressIntervalRef.current = setInterval(() => {
-              if (audioRef.current) {
-                const cur = audioRef.current.currentTime;
-                setCurrentTime(cur);
-                if (cur >= duration) {
-                  stopPlayback();
-                }
-              }
-            }, 250);
+            // Reprodução nativa iniciada com sucesso
           })
-          .catch(() => {
+          .catch((err) => {
+            console.warn('Falha no áudio nativo, tentando fallback:', err);
+            // Fallback sintético caso o dispositivo bloqueie ficheiros de áudio
             startSynthPlayback(trackNumber);
           });
       }
     } else {
-      // Usar o sintetizador realista diretamente
       startSynthPlayback(trackNumber);
     }
   };
 
   const pause = () => {
     if (isPlaying) {
-      if (audioRef.current) audioRef.current.pause();
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch {}
+      }
       if (synthControllerRef.current) {
         synthControllerRef.current.stop();
         synthControllerRef.current = null;
       }
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setIsPlaying(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current && isPlaying) {
+      const cur = audioRef.current.currentTime;
+      setCurrentTime(cur);
+      if (cur >= duration) {
+        stopPlayback();
+      }
+    }
+  };
+
+  const handleEnded = () => {
+    stopPlayback();
+  };
+
+  const handleError = () => {
+    if (activeTrackNumber && isPlaying) {
+      startSynthPlayback(activeTrackNumber);
     }
   };
 
@@ -147,6 +191,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         pause,
       }}
     >
+      {/* Elemento de áudio HTML5 montado no DOM para compatibilidade total com iOS Safari */}
+      <audio
+        ref={audioRef}
+        playsInline
+        preload="none"
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleEnded}
+        onError={handleError}
+        style={{ display: 'none' }}
+      />
       {children}
     </AudioContext.Provider>
   );
